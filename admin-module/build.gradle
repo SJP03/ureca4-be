@@ -1,0 +1,16 @@
+dependencies {
+    // Core 모듈 의존
+    implementation project(':core-module')
+    
+    // Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    
+    // Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // SpringDoc (Swagger)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    
+    // DevTools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}

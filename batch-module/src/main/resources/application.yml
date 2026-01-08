@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: billing-batch
+    
+  config:
+    import: optional:file:../.env[.properties]
+    
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+  
+  batch:
+    jdbc:
+      initialize-schema: always
+      table-prefix: BATCH_
+    job:
+      enabled: false
+  
+  flyway:
+    enabled: false
+
+server:
+  port: 8081
+
+billing:
+  batch:
+    chunk-size: 1000
+    pool-size: 5
+    target-processing-time: 1800
+
+logging:
+  level:
+    org.springframework.batch: DEBUG
+  file:
+    name: logs/batch.log

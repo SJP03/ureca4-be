@@ -1,0 +1,6 @@
+rootProject.name = 'Ureca_4_billing_system'
+
+include 'core-module'
+include 'batch-module'
+include 'notification-module'
+include 'admin-module'

@@ -1,0 +1,13 @@
+dependencies {
+    // Core 모듈 의존
+    implementation project(':core-module')
+    
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+    
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    
+    // Test
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+}
