@@ -1,57 +1,22 @@
 spring:
-  application:
-    name: billing-notification
-    
-  config:
-    import: optional:file:../.env[.properties]
-  
+  profiles:
+    active: local
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration  
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  
+
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-  
+
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS}
-    consumer:
-      group-id: billing-notification-group
-      auto-offset-reset: latest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      max-poll-records: 100
-    listener:
-      ack-mode: manual
-      concurrency: 3
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-  
-  flyway:
-    enabled: false
-
-server:
-  port: 8082
-
-billing:
-  notification:
-    email:
-      mock-delay-ms: 1000
-      failure-rate: 0.01
-    forbidden-hours:
-      start: 22
-      end: 8
-    retry:
-      max-attempts: 3
-      backoff-ms: 2000
-
-logging:
-  level:
-    org.springframework.kafka: INFO
-  file:
-    name: logs/notification.log
