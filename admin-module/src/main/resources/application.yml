@@ -1,74 +1,22 @@
 spring:
-  application:
-    name: billing-admin
-    
-  config:
-    import: optional:file:../.env[.properties]
-  
-  # Database 설정 
+  profiles:
+    active: local
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration  
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-  
-  # Redis 설정 (기본값 없음)
+
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 3000ms
-  
-  # Kafka 설정 (기본값 없음)
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS}
-  
-  # Flyway 비활성화
-  flyway:
-    enabled: false
-
-# 서버 설정
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-# Actuator
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always
-
-# SpringDoc (Swagger)
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-  packages-to-scan: com.ureca.billing.admin
-
-# Jasypt (기본값 없음)
-jasypt:
-  encryptor:
-    password: ${JASYPT_PASSWORD}
-    algorithm: PBEWithMD5AndDES
-    iv-generator-classname: org.jasypt.iv.NoIvGenerator
-
-# 로깅
-logging:
-  level:
-    root: INFO
-    com.ureca.billing: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/admin.log

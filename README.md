@@ -91,24 +91,7 @@ subprojects {
 .env.example
 ```
 
-이를 복사하여 `.env` 파일 생성
-
-```
-cp .env.example .env
-```
-
----
-
-### ✅ 2) `.env` 내용 작성 예시
-
-```
-DB_URL=jdbc:mysql://localhost:3306/billing?serverTimezone=UTC&characterEncoding=UTF-8
-DB_USERNAME=root
-DB_PASSWORD=1234
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
+이를 복사하여 `.env.local`, `.env.prod` 파일 생성
 
 ---
 
@@ -133,8 +116,8 @@ spring:
 📌 **중요**
 
 * `Driver com.mysql.cj.jdbc.Driver claims to not accept jdbcUrl, ${DB_URL}` 같은 에러는
-  `.env` 가 적용 안 됐거나 변수 값이 비어있을 때 발생함
-* `.env` 반드시 존재해야 함
+  `.env.[]` 가 적용 안 됐거나 변수 값이 비어있을 때 발생함
+* `.env.[]` 반드시 존재해야 함
 
 ---
 
@@ -231,7 +214,7 @@ status: UP
 
 | 문제                       | 원인        | 해결                        |
 | ------------------------ | --------- | ------------------------- |
-| MySQL 연결 실패              | .env 미작성  | .env 채우기                  |
+| MySQL 연결 실패              | .env.[] 미작성  | .env.[] 채우기                  |
 | Redis DOWN               | Redis 미실행 | Redis 실행                  |
 | Swagger 404              | 경로 오류     | `/api/swagger-ui.html` 확인 |
 | Driver claims jdbcUrl 오류 | 환경변수 미적용  | .env 존재 여부 확인             |

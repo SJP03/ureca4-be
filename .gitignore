@@ -45,6 +45,7 @@ out/
 .env
 .env.local
 .env.prod
+.env.*
 .env.development
 .env.production
 
