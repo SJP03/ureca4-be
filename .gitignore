@@ -69,8 +69,4 @@ logs/
 .DS_Store
 Thumbs.db
 
-### Application Properties ###
-application-local.yml
-application-prod.yml
-
 .metadata/**
