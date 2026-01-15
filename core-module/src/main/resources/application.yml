@@ -1,7 +1,7 @@
 # 공통 데이터베이스 설정
 spring:
   config:
-    import: optional:file:../.env[.properties]
+    import: optional:file:.env[.properties]
   batch:
     job:
       name: userDummyJob
@@ -19,11 +19,13 @@ spring:
     locations: classpath:db/migration
 
 # Jasypt 암호화 (설정 정보)
+# 추후에 보강
 jasypt:
   encryptor:
     password: ${JASYPT_PASSWORD}
-    algorithm: PBEWithMD5AndDES
-    iv-generator-classname: org.jasypt.iv.NoIvGenerator
+    algorithm: PBEWithHMACSHA512AndAES_256
+    key-obtention-iterations: 1000
+    pool-size: 1
 
 # 로깅
 logging:
