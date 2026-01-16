@@ -6,6 +6,7 @@ import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -18,8 +19,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.ureca.billing.core.entity.Users;
+import com.ureca.billing.core.entity.UserAddons;
 import com.ureca.billing.core.entity.UserPlans;
+import com.ureca.billing.core.entity.Users;
+import com.ureca.billing.core.util.SequenceItemReader;
 import com.ureca.billing.core.util.UserDummyProcessor;
 import com.ureca.billing.core.util.UserPlanDummyProcessor;
 
@@ -48,12 +51,25 @@ public class DummyDataJobConfig {
                 .writer(writer)
                 .build();
     }
+    
+    @Bean
+    @StepScope
+    public ItemReader<Long> usersReader() {
+        return new SequenceItemReader(10_000);
+    }
+
+    @Bean
+    @StepScope
+    public ItemReader<Long> userAddonsReader() {
+        return new SequenceItemReader(20_000);
+    }
+
 
     /**
      * Users 더미 Step
      */
     @Bean
-    public Step usersDummyStep(UserDummyProcessor processor, ItemReader<Long> userReader) {
+    public Step usersDummyStep(UserDummyProcessor processor, @Qualifier("usersReader") ItemReader<Long> reader) {
         JdbcBatchItemWriter<Users> writer = new JdbcBatchItemWriter<>();
         writer.setDataSource(dataSource);
         writer.setSql("""
@@ -71,14 +87,14 @@ public class DummyDataJobConfig {
         });
         writer.afterPropertiesSet();
 
-        return createStep("usersDummyStep", userReader, processor, writer, 1000);
+        return createStep("usersDummyStep", reader, processor, writer, 1000);
     }
 
     /**
-     * UsersPlans 더미 Step
+     * UserPlans 더미 Step
      */
     @Bean
-    public Step usersPlansDummyStep(UserPlanDummyProcessor processor, ItemReader<Users> reader) {
+    public Step userPlansDummyStep(UserPlanDummyProcessor processor, ItemReader<Users> reader) {
         JdbcBatchItemWriter<UserPlans> writer = new JdbcBatchItemWriter<>();
         writer.setDataSource(dataSource);
         writer.setSql("""
@@ -94,8 +110,47 @@ public class DummyDataJobConfig {
         });
         writer.afterPropertiesSet();
 
-        return createStep("usersPlansDummyStep", reader, processor, writer, 1000);
+        return createStep("userPlansDummyStep", reader, processor, writer, 1000);
     }
+    /**
+     * UserAddons 더미 Step
+     */
+    @Bean
+    public Step userAddonsDummyStep(
+            ItemProcessor<Long, UserAddons> processor,
+            @Qualifier("userAddonsReader") ItemReader<Long> reader
+    ) {
+        JdbcBatchItemWriter<UserAddons> writer = new JdbcBatchItemWriter<>();
+        writer.setDataSource(dataSource);
+        writer.setSql("""
+            INSERT INTO USER_ADDONS
+            (user_id, addon_id, start_date, end_date, status)
+            VALUES (?, ?, ?, ?, ?)
+        """);
+
+        writer.setItemPreparedStatementSetter((addon, ps) -> {
+            ps.setLong(1, addon.getUserId());
+            ps.setLong(2, addon.getAddonId());
+            ps.setDate(3, Date.valueOf(addon.getStartDate()));
+            ps.setDate(
+                4,
+                addon.getEndDate() != null
+                    ? Date.valueOf(addon.getEndDate())
+                    : null
+            );
+            ps.setString(5, addon.getStatus().name());
+        });
+
+        writer.afterPropertiesSet();
+
+        return new StepBuilder("userAddonsDummyStep", jobRepository)
+            .<Long, UserAddons>chunk(1000, transactionManager)
+            .reader(reader)
+            .processor(processor)
+            .writer(writer)
+            .build();
+    }
+
 
     /**
      * 전체 더미 Job
@@ -104,11 +159,13 @@ public class DummyDataJobConfig {
     @Bean
     public Job dummyDataJob(
     		@Qualifier("usersDummyStep")Step usersDummyStep,
-    		@Qualifier("usersPlansDummyStep") Step usersPlansDummyStep
+    		@Qualifier("userPlansDummyStep") Step userPlansDummyStep,
+    		@Qualifier("userAddonsDummyStep") Step userAddonsDummyStep
     		) {
         return new JobBuilder("dummyDataJob", jobRepository)
                 .start(usersDummyStep)
-                .next(usersPlansDummyStep)
+                .next(userPlansDummyStep)
+                .next(userAddonsDummyStep)
                 .build();
     }
 }
