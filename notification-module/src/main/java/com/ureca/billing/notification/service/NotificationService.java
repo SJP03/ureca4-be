@@ -21,7 +21,7 @@ public class NotificationService {
 
     public void sendNotification(BillingMessageDto message){
         // 중복 발송 방지
-        String key = "history:billing" + message.getBillId();
+    	String key = "sent:msg:EMAIL:" + message.getBillId();
         Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "PROCESSED", Duration.ofDays(1));
 
         if (Boolean.FALSE.equals(isNew)){

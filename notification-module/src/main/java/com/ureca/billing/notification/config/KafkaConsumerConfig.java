@@ -34,7 +34,7 @@ public class KafkaConsumerConfig {
                     // 기본적으로 원래토픽명.DLT 로 보냅니다. (billing-topic.DLT)
                     return new org.apache.kafka.common.TopicPartition(r.topic() + ".DLT", r.partition());
                 });
-
+        
         // 2. BackOff: 1초 간격으로 3번 재시도
         FixedBackOff backOff = new FixedBackOff(1000L, 3);
 

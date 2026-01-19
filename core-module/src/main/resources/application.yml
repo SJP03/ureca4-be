@@ -1,7 +1,7 @@
 # 공통 데이터베이스 설정
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import: optional:file:../.env[.properties]
   batch:
     job:
       name: dummyDataJob

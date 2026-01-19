@@ -21,7 +21,7 @@ public class BillingConsumer {
      * Kafka 리스너
      * ack: 수동 커밋을 위해 받음 (선택 사항이지만 대용량 처리 시 권장)
      */
-    @KafkaListener(topics = "billing-topic", groupId = "billing-group", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "billing-event", groupId = "billing-group", containerFactory = "kafkaListenerContainerFactory")
     public void listen(ConsumerRecord<String, BillingMessageDto> record, Acknowledgment ack) {
         BillingMessageDto message = record.value();
 
