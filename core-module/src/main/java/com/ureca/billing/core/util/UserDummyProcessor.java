@@ -8,6 +8,7 @@ import java.util.Locale;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.ureca.billing.core.entity.NotificationType;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -68,15 +69,15 @@ public class UserDummyProcessor implements ItemProcessor<Long, Users> {
                 .toLocalDate();
 
         // ===== 5️⃣ 엔티티 생성 =====
-        return new Users(
-                emailCipher,
-                emailHash,
-                phoneCipher,
-                phoneHash,
-                name,
-                birthDate,
-                UserStatus.ACTIVE
-        );
+        return Users.builder()
+                .emailCipher(emailCipher)
+                .emailHash(emailHash)
+                .phoneCipher(phoneCipher)
+                .phoneHash(phoneHash)
+                .name(name)
+                .birthDate(birthDate)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }
 
