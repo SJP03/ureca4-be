@@ -10,4 +10,7 @@ dependencies {
     
     // Test
     testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    // Jackson (JSON 처리) - Spring Boot가 자동으로 버전 관리
+    implementation 'org.springframework.boot:spring-boot-starter-json'
 }

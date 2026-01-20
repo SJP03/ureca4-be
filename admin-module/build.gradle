@@ -2,8 +2,20 @@ dependencies {
     // Core 모듈 의존
     implementation project(':core-module')
     
+    // Batch 모듈 의존
+    implementation project(':batch-module')
+    
     // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    
+    // JDBC (JdbcTemplate 사용)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    
+    // Redis (StringRedisTemplate 사용)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    
+    // Database
+    runtimeOnly 'com.mysql:mysql-connector-j'
     
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

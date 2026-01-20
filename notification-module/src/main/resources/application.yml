@@ -20,3 +20,17 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS}
+    consumer:
+      group-id: notification-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false  # 수동 커밋 사용
+    listener:
+      ack-mode: manual  # 수동 커밋 모드 활성화
+      type: single  # 단일 레코드 리스너
+
+# Billing 알림 설정
+billing:
+  kafka:
+    topic: billing-events

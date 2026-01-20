@@ -5,6 +5,12 @@ dependencies {
     // Spring Batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+    
+    // Jackson (JSON 처리) - Spring Boot가 자동으로 버전 관리
+    implementation 'org.springframework.boot:spring-boot-starter-json'
+    
     // DataFaker (더미 데이터 생성)
     implementation 'net.datafaker:datafaker:2.0.2'
     

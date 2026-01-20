@@ -20,3 +20,20 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+
+# Billing 배치 설정
+billing:
+  batch:
+    enabled: true
+    chunk-size: 1000
+    cron: "0 0 2 1 * ?"  # 매월 1일 새벽 2시
+  kafka:
+    topic: billing-events
