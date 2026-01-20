@@ -1,5 +1,7 @@
 package com.ureca.billing.notification.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ureca.billing.core.dto.BillingMessageDto;  // ✅ core-module의 DTO 사용
 import com.ureca.billing.notification.domain.dto.WaitingQueueStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,23 +20,49 @@ import java.util.stream.Collectors;
 public class WaitingQueueService {
     
     private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
     
     private static final String QUEUE_KEY = "queue:message:waiting";
     
     /**
-     * 대기열에 메시지 추가 (JSON 문자열)
+     * 대기열에 메시지 추가 (DTO)
+     */
+    public void addToQueue(BillingMessageDto message) {
+        try {
+            LocalDateTime releaseTime = calculateReleaseTime();
+            long score = releaseTime.atZone(ZoneId.systemDefault()).toEpochSecond();
+            
+            String messageJson = objectMapper.writeValueAsString(message);
+            
+            redisTemplate.opsForZSet().add(QUEUE_KEY, messageJson, score);
+            
+            log.info("📥 Message added to waiting queue. billId={}, releaseTime={}", 
+                    message.getBillId(), releaseTime);
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to add message to queue: {}", e.getMessage());
+            throw new RuntimeException("Failed to add to queue", e);
+        }
+    }
+    
+    /**
+     * 대기열에 메시지 추가 (JSON String) - 기존 코드 호환용
      */
     public void addToQueue(String messageJson) {
         try {
+            // JSON 유효성 검증을 위해 파싱
+            BillingMessageDto message = objectMapper.readValue(messageJson, BillingMessageDto.class);
+            
             LocalDateTime releaseTime = calculateReleaseTime();
             long score = releaseTime.atZone(ZoneId.systemDefault()).toEpochSecond();
             
             redisTemplate.opsForZSet().add(QUEUE_KEY, messageJson, score);
             
-            log.info("📥 대기열 저장 완료. releaseTime={}", releaseTime);
+            log.info("📥 Message added to waiting queue (from JSON). billId={}, releaseTime={}", 
+                    message.getBillId(), releaseTime);
             
         } catch (Exception e) {
-            log.error("❌ 대기열 저장 실패: {}", e.getMessage());
+            log.error("❌ Failed to add message to queue: {}", e.getMessage());
             throw new RuntimeException("Failed to add to queue", e);
         }
     }
@@ -48,7 +76,7 @@ public class WaitingQueueService {
         Set<String> messages = redisTemplate.opsForZSet()
                 .rangeByScore(QUEUE_KEY, 0, now, 0, limit);
         
-        log.info("📤 대기열 조회 - {}건", messages != null ? messages.size() : 0);
+        log.info("📤 Found {} ready messages in queue", messages != null ? messages.size() : 0);
         
         return messages;
     }
@@ -58,7 +86,7 @@ public class WaitingQueueService {
      */
     public void removeFromQueue(String messageJson) {
         Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, messageJson);
-        log.debug("🗑️ 대기열 제거 - {}건", removed);
+        log.debug("🗑️ Removed {} message(s) from queue", removed);
     }
     
     /**
@@ -74,7 +102,7 @@ public class WaitingQueueService {
      */
     public void clearQueue() {
         Boolean deleted = redisTemplate.delete(QUEUE_KEY);
-        log.info("🗑️ 대기열 초기화. deleted={}", deleted);
+        log.info("🗑️ Waiting queue cleared. deleted={}", deleted);
     }
     
     /**
@@ -101,10 +129,15 @@ public class WaitingQueueService {
     }
     
     /**
-     * 다음 발송 가능 시간 계산 (다음날 08:00)
+     * 다음 발송 가능 시간 계산
      */
     private LocalDateTime calculateReleaseTime() {
+        // ✅ 테스트용: 즉시 발송 가능하도록 과거 시간 설정
+        // return LocalDateTime.now().minusMinutes(1);
+        
+        // 🚀 운영용: 다음날 08:00
         LocalDateTime now = LocalDateTime.now();
-        return now.toLocalDate().plusDays(1).atTime(8, 0);
+        LocalDateTime nextRelease = now.toLocalDate().plusDays(1).atTime(8, 0);
+        return nextRelease;
     }
 }
