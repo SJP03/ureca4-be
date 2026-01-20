@@ -1,7 +1,5 @@
 package com.ureca.billing.notification.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ureca.billing.notification.domain.dto.BillingMessage;
 import com.ureca.billing.notification.domain.dto.WaitingQueueStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,28 +18,23 @@ import java.util.stream.Collectors;
 public class WaitingQueueService {
     
     private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
     
     private static final String QUEUE_KEY = "queue:message:waiting";
     
     /**
-     * 대기열에 메시지 추가
+     * 대기열에 메시지 추가 (JSON 문자열)
      */
-    public void addToQueue(BillingMessage message) {
+    public void addToQueue(String messageJson) {
         try {
-            // 다음날 08:00 계산
             LocalDateTime releaseTime = calculateReleaseTime();
             long score = releaseTime.atZone(ZoneId.systemDefault()).toEpochSecond();
             
-            String messageJson = objectMapper.writeValueAsString(message);
-            
             redisTemplate.opsForZSet().add(QUEUE_KEY, messageJson, score);
             
-            log.info("📥 Message added to waiting queue. billId={}, releaseTime={}", 
-                    message.getBillId(), releaseTime);
+            log.info("📥 대기열 저장 완료. releaseTime={}", releaseTime);
             
         } catch (Exception e) {
-            log.error("❌ Failed to add message to queue: {}", e.getMessage());
+            log.error("❌ 대기열 저장 실패: {}", e.getMessage());
             throw new RuntimeException("Failed to add to queue", e);
         }
     }
@@ -55,7 +48,7 @@ public class WaitingQueueService {
         Set<String> messages = redisTemplate.opsForZSet()
                 .rangeByScore(QUEUE_KEY, 0, now, 0, limit);
         
-        log.info("📤 Found {} ready messages in queue", messages != null ? messages.size() : 0);
+        log.info("📤 대기열 조회 - {}건", messages != null ? messages.size() : 0);
         
         return messages;
     }
@@ -65,8 +58,9 @@ public class WaitingQueueService {
      */
     public void removeFromQueue(String messageJson) {
         Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, messageJson);
-        log.debug("🗑️ Removed {} message(s) from queue", removed);
+        log.debug("🗑️ 대기열 제거 - {}건", removed);
     }
+    
     /**
      * 대기열 크기 확인
      */
@@ -80,8 +74,9 @@ public class WaitingQueueService {
      */
     public void clearQueue() {
         Boolean deleted = redisTemplate.delete(QUEUE_KEY);
-        log.info("🗑️ Waiting queue cleared. deleted={}", deleted);
+        log.info("🗑️ 대기열 초기화. deleted={}", deleted);
     }
+    
     /**
      * 대기열 상태 조회
      */
@@ -91,7 +86,7 @@ public class WaitingQueueService {
         long now = System.currentTimeMillis() / 1000;
         Long readyCount = redisTemplate.opsForZSet().count(QUEUE_KEY, 0, now);
         
-        Set<String> readyMessages = getReadyMessages(10);  // 최대 10개만
+        Set<String> readyMessages = getReadyMessages(10);
         
         List<String> messageList = readyMessages != null 
                 ? readyMessages.stream().limit(10).collect(Collectors.toList())
@@ -106,18 +101,10 @@ public class WaitingQueueService {
     }
     
     /**
-     * 다음 발송 가능 시간 계산
-     * 
-     * 테스트 모드: 즉시 발송 가능
-     * 운영 모드: 다음날 08:00
+     * 다음 발송 가능 시간 계산 (다음날 08:00)
      */
     private LocalDateTime calculateReleaseTime() {
-        // ✅ 테스트용: 즉시 발송 가능하도록 과거 시간 설정
-        //return LocalDateTime.now().minusMinutes(1);
-        
-        // 🚀 운영용: 다음날 08:00 (배포 시 주석 해제)
-         LocalDateTime now = LocalDateTime.now();
-         LocalDateTime nextRelease = now.toLocalDate().plusDays(1).atTime(8, 0);
-          return nextRelease;
+        LocalDateTime now = LocalDateTime.now();
+        return now.toLocalDate().plusDays(1).atTime(8, 0);
     }
 }

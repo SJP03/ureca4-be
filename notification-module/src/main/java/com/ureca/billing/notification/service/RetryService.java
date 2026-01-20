@@ -1,7 +1,7 @@
 package com.ureca.billing.notification.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ureca.billing.notification.domain.dto.BillingMessage;
+import com.ureca.billing.core.dto.BillingMessageDto;
 import com.ureca.billing.notification.domain.entity.Notification;
 import com.ureca.billing.notification.domain.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +72,7 @@ public class RetryService {
                 }
                 
                 // 3. BillingMessage 재구성
-                BillingMessage message = reconstructMessage(notification);
+                BillingMessageDto message = reconstructMessage(notification);
                 
                 // 4. Kafka로 재발행
                 String messageJson = objectMapper.writeValueAsString(message);
@@ -105,14 +105,14 @@ public class RetryService {
         return successCount;
     }
 
-    private BillingMessage reconstructMessage(Notification notification) {
+    private BillingMessageDto reconstructMessage(Notification notification) {
         // 임시: 간단한 재구성
-        return BillingMessage.builder()
+        return BillingMessageDto.builder()
             .billId(notification.getNotificationId())  
             .userId(notification.getUserId())
             .recipientEmail(notification.getRecipient())
             .recipientPhone(null)
-            .totalAmount(50000)  // 임시 값
+            .totalAmount(50000L)  // 임시 값
             .billYearMonth("2025-01")
             .billDate("2025-01-25")
             .dueDate("2025-02-10")

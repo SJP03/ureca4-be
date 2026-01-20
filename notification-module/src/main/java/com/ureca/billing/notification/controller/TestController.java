@@ -1,24 +1,23 @@
 package com.ureca.billing.notification.controller;
 
-import com.ureca.billing.notification.domain.dto.BillingMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ureca.billing.core.dto.BillingMessageDto;
 import com.ureca.billing.notification.service.EmailService;
 import com.ureca.billing.notification.service.MessagePolicyService;
 import com.ureca.billing.notification.service.WaitingQueueService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
+@Tag(name = "Test", description = "이메일 발송 테스트 API")
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
@@ -28,26 +27,27 @@ public class TestController {
     private final MessagePolicyService policyService;
     private final WaitingQueueService queueService;
     private final EmailService emailService;
-    private final RedisTemplate<String, String> redisTemplate;  
-    
-    @Value("${spring.data.redis.host}")  
-    private String redisHost;
-    
-    @Value("${spring.data.redis.port}")  
-    private int redisPort;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
     
     /**
      * 통합 테스트: 현재 실제 시간으로 발송
      */
+    @Operation(summary = "이메일 발송 테스트", description = "Kafka 거치지 않고 직접 이메일 발송 테스트")
     @PostMapping("/send")
-    public ResponseEntity<Map<String, Object>> testSend(@RequestBody BillingMessage message) {
+    public ResponseEntity<Map<String, Object>> testSend(@RequestBody BillingMessageDto message) {
         LocalTime now = LocalTime.now();
-        log.info("🧪 Test send request. billId={}, currentTime={}", message.getBillId(), now);
+        log.info("🧪 테스트 발송 요청. billId={}, currentTime={}", message.getBillId(), now);
         
         boolean isBlock = policyService.isBlockTime();
         
         if (isBlock) {
-            queueService.addToQueue(message);
+            try {
+                String messageJson = objectMapper.writeValueAsString(message);
+                queueService.addToQueue(messageJson);
+            } catch (Exception e) {
+                log.error("JSON 변환 실패", e);
+            }
             
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -80,19 +80,25 @@ public class TestController {
     /**
      * 통합 테스트: 시뮬레이션 시간으로 발송
      */
+    @Operation(summary = "시뮬레이션 시간으로 발송")
     @PostMapping("/send-with-time")
     public ResponseEntity<Map<String, Object>> testSendWithTime(
-            @RequestBody BillingMessage message,
+            @RequestBody BillingMessageDto message,
             @RequestParam String simulatedTime) {
         
         LocalTime testTime = LocalTime.parse(simulatedTime);
         LocalTime actualTime = LocalTime.now();
-        log.info("🧪 Test send with simulated time: {} (actual: {})", testTime, actualTime);
+        log.info("🧪 시뮬레이션 테스트. simulatedTime={}, actualTime={}", testTime, actualTime);
         
         boolean isBlock = policyService.isBlockTime(testTime);
         
         if (isBlock) {
-            queueService.addToQueue(message);
+            try {
+                String messageJson = objectMapper.writeValueAsString(message);
+                queueService.addToQueue(messageJson);
+            } catch (Exception e) {
+                log.error("JSON 변환 실패", e);
+            }
             
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -128,10 +134,9 @@ public class TestController {
     /**
      * 정책 체크 (시뮬레이션 시간)
      */
+    @Operation(summary = "정책 체크")
     @GetMapping("/check-time")
-    public ResponseEntity<Map<String, Object>> checkWithTime(
-            @RequestParam String simulatedTime) {
-        
+    public ResponseEntity<Map<String, Object>> checkWithTime(@RequestParam String simulatedTime) {
         LocalTime testTime = LocalTime.parse(simulatedTime);
         LocalTime actualTime = LocalTime.now();
         boolean isBlock = policyService.isBlockTime(testTime);
@@ -142,29 +147,5 @@ public class TestController {
             "isBlockTime", isBlock,
             "message", isBlock ? "⛔ 금지 시간" : "✅ 정상 시간"
         ));
-    }
-    
-    /**
-     * 테스트용 메시지 생성
-     */
-    @GetMapping("/create-message")
-    public ResponseEntity<BillingMessage> createTestMessage() {
-        BillingMessage message = BillingMessage.builder()
-                .billId(1L)
-                .userId(1L)
-                .billYearMonth("202501")
-                .recipientEmail("test@yopmail.com")
-                .recipientPhone("01012345678")
-                .totalAmount(85000)
-                .planFee(46612)
-                .addonFee(8500)
-                .microPaymentFee(29888)
-                .billDate("2025-01-31")
-                .dueDate("2025-02-15")
-                .planName("5G 프리미어 에센셜")
-                .timestamp(LocalTime.now().toString())
-                .build();
-        
-        return ResponseEntity.ok(message);
     }
 }

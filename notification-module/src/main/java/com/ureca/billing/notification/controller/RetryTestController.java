@@ -19,7 +19,7 @@ public class RetryTestController {
     private final RetryService retryService;
     private final NotificationRepository notificationRepository;
     
-    @Operation(summary = "재시도 스케줄러 수동 실행")
+    @Operation(summary = "재시도 스케줄러 수동 실행", description = "FAILED 상태 메시지를 수동으로 재시도")
     @PostMapping("/run")
     public Map<String, Object> runRetryManually() {
         int retryCount = retryService.retryFailedMessages(100);
@@ -31,7 +31,7 @@ public class RetryTestController {
         );
     }
     
-    @Operation(summary = "FAILED 상태 메시지 개수 조회")
+    @Operation(summary = "FAILED 메시지 개수 조회", description = "재시도 대상 FAILED 메시지 수")
     @GetMapping("/failed-count")
     public Map<String, Object> getFailedCount() {
         long failedCount = notificationRepository
@@ -44,7 +44,7 @@ public class RetryTestController {
         );
     }
     
-    @Operation(summary = "모든 Notification 상태 요약")
+    @Operation(summary = "Notification 상태 요약", description = "SENT/FAILED/PENDING 등 상태별 개수 조회")
     @GetMapping("/status-summary")
     public Map<String, Object> getStatusSummary() {
         Map<String, Long> summary = new HashMap<>();

@@ -1,7 +1,8 @@
 package com.ureca.billing.notification.scheduler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ureca.billing.notification.domain.dto.BillingMessage;
+
+import com.ureca.billing.core.dto.BillingMessageDto;
 import com.ureca.billing.notification.service.MessagePolicyService;
 import com.ureca.billing.notification.service.WaitingQueueService;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +62,7 @@ public class WaitingQueueScheduler {
         for (String messageJson : messages) {
             try {
                 // JSON → DTO 변환 (유효성 검사)
-                BillingMessage message = objectMapper.readValue(messageJson, BillingMessage.class);
+            	BillingMessageDto message = objectMapper.readValue(messageJson, BillingMessageDto.class);
                 
                 // Kafka로 재발행
                 kafkaTemplate.send(TOPIC, messageJson);

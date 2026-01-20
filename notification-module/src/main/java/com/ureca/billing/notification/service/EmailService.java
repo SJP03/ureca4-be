@@ -1,6 +1,6 @@
 package com.ureca.billing.notification.service;
 
-import com.ureca.billing.notification.domain.dto.BillingMessage;
+import com.ureca.billing.core.dto.BillingMessageDto;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +13,12 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Random;
 
+/**
+ * Email Service
+ * - 실제 이메일 발송은 설정으로 제어
+ * - 테스트용 개발자 이메일로만 실제 발송
+ * - 고객 이메일은 로그로만 처리
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -24,17 +30,20 @@ public class EmailService {
     @Value("${notification.email.enabled:false}")
     private boolean realEmailEnabled;
     
-    @Value("${notification.email.test-recipient:quokka3306@gmail.com}")
+    @Value("${notification.email.test-recipient:}")
     private String testRecipient;
     
+    @Value("${notification.email.send-to-customer:false}")
+    private boolean sendToCustomer;
+    
     /**
-     * 이메일 발송
+     * 이메일 발송 (BillingMessageDto 사용)
      * - 1초 지연
-     * - 1% 확률로 실패
-     * - 실제 이메일 발송 (설정 시)
+     * - 1% 확률 실패
+     * - 실제 발송은 설정에 따라 제어
      */
-    public void sendEmail(BillingMessage message) throws Exception {
-        log.info("📧 Sending email to: {} (billId={})", 
+    public void sendEmail(BillingMessageDto message) throws Exception {
+        log.info("📧 이메일 발송 시작 - to: {}, billId: {}", 
                 message.getRecipientEmail(), message.getBillId());
         
         // 1초 지연 (네트워크 지연 시뮬레이션)
@@ -42,34 +51,41 @@ public class EmailService {
         
         // 1% 확률로 실패
         if (random.nextInt(100) < 1) {
-            log.error("❌ Email send failed (1% probability). billId={}", message.getBillId());
+            log.error("❌ 이메일 발송 실패 (1% 확률) - billId: {}", message.getBillId());
             throw new RuntimeException("Email send failed (SMTP error simulation)");
         }
         
-        // 실제 이메일 발송
-        if (realEmailEnabled) {
+        // 실제 이메일 발송 (테스트용)
+        if (realEmailEnabled && testRecipient != null && !testRecipient.isEmpty()) {
             try {
-                sendRealEmail(message);
-                log.info("📬 Real email sent to: {}", testRecipient);
+                sendRealEmail(message, testRecipient);
+                log.info("✉️ 테스트 이메일 발송 완료 - to: {}", testRecipient);
             } catch (Exception e) {
-                log.warn("⚠️ Real email send failed: {}", e.getMessage());
-                // 실제 발송 실패는 시뮬레이션에 영향 주지 않음
+                log.warn("⚠️ 테스트 이메일 발송 실패: {} (시뮬레이션은 계속됨)", e.getMessage());
             }
         }
         
-        log.info("✅ Email sent successfully. billId={}, amount={}", 
-                message.getBillId(), message.getTotalAmount());
+        // 고객 이메일은 로그로만 처리
+        if (!sendToCustomer) {
+            log.info("✅ [고객 이메일 발송 완료 (로그 전용)] - to: {}, billId: {}, amount: {}원", 
+                    message.getRecipientEmail(), 
+                    message.getBillId(), 
+                    String.format("%,d", message.getTotalAmount()));
+        } else {
+            // 실제 고객 발송 (운영 환경에서만 사용)
+            sendRealEmail(message, message.getRecipientEmail());
+            log.info("✅ 고객 이메일 발송 완료 - to: {}", message.getRecipientEmail());
+        }
     }
     
     /**
      * 실제 이메일 발송
      */
-    private void sendRealEmail(BillingMessage message) throws Exception {
+    private void sendRealEmail(BillingMessageDto message, String recipientEmail) throws Exception {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         
-        // 수신자: 테스트용 개발자 이메일
-        helper.setTo(testRecipient);
+        helper.setTo(recipientEmail);
         helper.setSubject(String.format("[LG U+] %s 청구서 도착", message.getBillYearMonth()));
         helper.setText(createEmailBody(message), true);
         
@@ -77,9 +93,9 @@ public class EmailService {
     }
     
     /**
-     * 이메일 본문 생성 (HTML)
+     * 이메일 HTML 본문 생성
      */
-    private String createEmailBody(BillingMessage message) {
+    private String createEmailBody(BillingMessageDto message) {
         NumberFormat currencyFormat = NumberFormat.getInstance(Locale.KOREA);
         
         return String.format("""
@@ -99,8 +115,6 @@ public class EmailService {
                     .label { color: #666; }
                     .value { font-weight: bold; }
                     .footer { text-align: center; padding: 20px; color: #999; font-size: 12px; }
-                    .button { display: inline-block; background: #667eea; color: white; 
-                              padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
                 </style>
             </head>
             <body>
@@ -136,10 +150,6 @@ public class EmailService {
                         <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
                             <strong>📅 납부 기한:</strong> %s
                         </div>
-                        
-                        <div style="text-align: center;">
-                            <a href="#" class="button">상세내역 확인</a>
-                        </div>
                     </div>
                     
                     <div class="footer">
@@ -152,7 +162,7 @@ public class EmailService {
             </html>
             """,
             message.getBillYearMonth(),
-            currencyFormat.format(message.getTotalAmount()),
+            currencyFormat.format(message.getTotalAmount() != null ? message.getTotalAmount() : 0),
             message.getPlanName() != null ? message.getPlanName() : "5G 프리미어",
             currencyFormat.format(message.getPlanFee() != null ? message.getPlanFee() : 0),
             currencyFormat.format(message.getAddonFee() != null ? message.getAddonFee() : 0),
