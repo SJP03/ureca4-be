@@ -1,26 +1,26 @@
 package com.ureca.billing.batch.service;
 
+import static org.apache.kafka.common.requests.FetchMetadata.log;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ureca.billing.core.dto.BillingMessageDto;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.apache.kafka.common.requests.FetchMetadata.log;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ureca.billing.core.dto.BillingMessageDto;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -203,7 +203,7 @@ public class MonthlyBillingService {
          * ========================= */
 
         // 5-1) prefs 조회: (EMAIL/SMS만) enabled=1
-        Map<Long, List<String>> channelsByUser = new HashMap<>();
+        Map<Long, Set<String>> channelsByUser = new HashMap<>();
         namedJdbc.query("""
             SELECT user_id, channel
             FROM USER_NOTIFICATION_PREFS
@@ -213,7 +213,7 @@ public class MonthlyBillingService {
         """, Map.of("userIds", userIds), (RowCallbackHandler) rs -> {
             long uid = rs.getLong("user_id");
             String channel = rs.getString("channel");
-            channelsByUser.computeIfAbsent(uid, k -> new ArrayList<>()).add(channel);
+            channelsByUser.computeIfAbsent(uid, k -> new HashSet<>()).add(channel);
         });
 
         // 5-2) outbox row 생성
@@ -224,7 +224,7 @@ public class MonthlyBillingService {
             Long billId = billIdByUser.get(uid);
             if (billId == null) continue;
 
-            List<String> channels = channelsByUser.getOrDefault(uid, List.of());
+            Set<String> channels = channelsByUser.getOrDefault(uid, Set.of());
             if (channels.isEmpty()) continue;
 
             UserContactInfo contact = userContacts.get(uid);
@@ -253,6 +253,7 @@ public class MonthlyBillingService {
                             .name(contact.getName())
                             .totalAmount(totalAmount)
                             .planName(planNames.getOrDefault(uid, "기본 요금제"))
+                            .notificationType(ch)
                             .build();
 
                     // 2. JSON 변환 (Fat Payload)
