@@ -31,4 +31,6 @@ public class UserAddons {
     public AddonStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public void setStatus(AddonStatus status) { this.status = status; }
 }
