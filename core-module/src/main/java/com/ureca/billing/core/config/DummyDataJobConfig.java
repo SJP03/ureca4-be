@@ -229,24 +229,35 @@ public class DummyDataJobConfig {
             .build();
     }
 
-    /**
-     * 전체 더미 Job
-     * 필요하면 Step 순서 추가만 하면 됨
+    //user 관련 더미데이터 생성 job
+    //monthlyDummyDataJob 실행전 반드시 먼저 실행해야됨
+    //--spring.batch.job.name=userDummyDataJob
+    @Bean
+    public Job userDummyDataJob(
+    		@Qualifier("usersDummyStep")Step usersDummyStep,
+    		@Qualifier("userNotificationPrefsDummyStep") Step userNotificationPrefsDummyStep
+    ) {
+    	return new JobBuilder("userDummyDataJob", jobRepository)
+    			.start(usersDummyStep)
+                .next(userNotificationPrefsDummyStep)
+    			.build();
+    }
+    //결제 데이터 관련 더미데이터 생성 job
+    //파라미터 필요 
+    /*예)
+     	--spring.batch.job.name=monthlyDummyDataJob
+		argetYearMonth=2025-08
      */
     @Bean
-    public Job dummyDataJob(
-    		@Qualifier("usersDummyStep")Step usersDummyStep,
+    public Job monthlyDummyDataJob(
     		@Qualifier("userPlansDummyStep") Step userPlansDummyStep,
     		@Qualifier("userAddonsDummyStep") Step userAddonsDummyStep,
-    		@Qualifier("microPaymentsDummyStep") Step microPaymentsDummyStep,
-    		@Qualifier("userNotificationPrefsDummyStep") Step userNotificationPrefsDummyStep
+    		@Qualifier("microPaymentsDummyStep") Step microPaymentsDummyStep
     		) {
-        return new JobBuilder("dummyDataJob", jobRepository)
-                .start(usersDummyStep)
-                .next(userPlansDummyStep)
+        return new JobBuilder("monthlyDummyDataJob", jobRepository)
+                .start(userPlansDummyStep)
                 .next(userAddonsDummyStep)
                 .next(microPaymentsDummyStep)
-                .next(userNotificationPrefsDummyStep)
                 .build();
     }
 }
