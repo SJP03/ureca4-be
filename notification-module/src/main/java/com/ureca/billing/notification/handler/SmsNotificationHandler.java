@@ -31,7 +31,7 @@ public class SmsNotificationHandler implements NotificationHandler {
         
         // 1. 중복 체크 (SMS용 키)
         String smsKey = "SMS:" + message.getBillId();
-        if (duplicateCheckHandler.isDuplicate(message.getBillId())) {
+        if (duplicateCheckHandler.isDuplicate(message.getBillId(), "SMS")) {
             log.warn("{} ⚠️ 중복 SMS 스킵 - billId={}", traceId, message.getBillId());
             return;
         }

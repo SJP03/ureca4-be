@@ -253,6 +253,7 @@ public class MonthlyBillingService {
                             .name(contact.getName())
                             .totalAmount(totalAmount)
                             .planName(planNames.getOrDefault(uid, "기본 요금제"))
+                            .notificationType(ch)
                             .build();
 
                     // 2. JSON 변환 (Fat Payload)
