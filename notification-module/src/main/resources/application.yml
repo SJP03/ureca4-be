@@ -1,6 +1,22 @@
 spring:
   profiles:
     active: local
+   
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
   flyway:
     enabled: true
@@ -21,14 +37,26 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS}
     consumer:
+      max-poll-records: 100  # 한 번에 100개 메시지 처리
+      fetch-min-size: 1024  # 최소 1KB 데이터 대기
+      fetch-max-wait: 500  # 최대 0.5초 대기
       group-id: billing-group
       auto-offset-reset: latest
       enable-auto-commit: false # 수동 커밋을 위해 자동 커밋 끄기
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
       properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+
         spring.json.trusted.packages: "*"
-        spring.json.value.default.type: "com.ureca.billing.core.dto.BillingMessageDto"
+        spring.json.value.default.type: com.ureca.billing.core.dto.BillingMessageDto
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+        
 
     # [중요] listener는 consumer 밖으로 나와야 합니다!
     listener:
@@ -37,3 +65,16 @@ spring:
   batch:
     job:
       enabled: false
+      
+# AES 암호화(개인 정보 보호)
+crypto:
+  aes:
+    key: ${AES_SECRET_KEY}
+  hash:
+    key: ${HASH_SECRET_KEY}
+      
+# 실제 이메일 발송 활성화 여부
+notification:
+  email:
+    enabled: true  # false로 하면 mocking만
+    test-recipient: 4billforu@gmail.com  # 테스트용 수신자
