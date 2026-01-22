@@ -34,12 +34,6 @@ docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --bui
 docker compose -f docker-compose.infra.yml -f docker-compose.app.yml down
 ```
 
-### 🛑 전체 종료 (Shutdown)
-컨테이너를 정지하고 네트워크를 제거합니다.
-```bash
-docker compose -f docker-compose.infra.yml -f docker-compose.app.yml down
-```
-
 ---
 
 ## 4. 🛠 더미 데이터 생성 (Batch Job 수동 실행)
