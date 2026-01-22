@@ -22,10 +22,10 @@
 인프라(DB, Kafka)와 상시 실행되는 서버(Admin, Batch, Notification)를 모두 띄웁니다.
 ```bash
 # 백그라운드 실행
-docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d
+docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker up -d
 
 # (코드 수정 시) 이미지를 새로 빌드하며 실행
-docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --build
+docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker up -d --build
 ```
 
 ### 🛑 전체 종료 (Shutdown)
