@@ -28,7 +28,7 @@ public class MonthlyBillingItemReader {
     ) {
         JdbcPagingItemReader<Long> reader = new JdbcPagingItemReader<>();
         reader.setDataSource(dataSource);
-        reader.setFetchSize(100);
+        // reader.setFetchSize(100);
         reader.setRowMapper((rs, rowNum) -> rs.getLong("user_id"));
 
         MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
