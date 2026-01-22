@@ -39,8 +39,7 @@ spring:
 
   batch:
     job:
-      name: monthlyBillingJob
-      enabled: true
+      enabled: false
     jdbc:
       initialize-schema: always
 
@@ -54,6 +53,3 @@ app:
   kafka:
     topics:
       billing-notification: billing-event
-
-server:
-  port: 8081
