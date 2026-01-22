@@ -31,7 +31,7 @@ public class SmsNotificationHandler implements NotificationHandler {
         
         // 1. 중복 체크 (SMS용 키)
         String smsKey = "SMS:" + message.getBillId();
-        if (duplicateCheckHandler.isDuplicate(message.getBillId())) {
+        if (duplicateCheckHandler.isDuplicate(message.getBillId(), "SMS")) {
             log.warn("{} ⚠️ 중복 SMS 스킵 - billId={}", traceId, message.getBillId());
             return;
         }
@@ -55,18 +55,11 @@ public class SmsNotificationHandler implements NotificationHandler {
                 message.getTotalAmount() != null ? String.format("%,d", message.getTotalAmount()) : "0"
             );
             
-            // 발송 완료 마킹
-            duplicateCheckHandler.markAsSent(message.getBillId(), "SMS");
-            
-            // DB 저장
-            saveNotification(message, "SENT", null, traceId);
-            
             log.info("{} ✅ SMS 발송 성공 - billId={}", traceId, message.getBillId());
             
         } catch (Exception e) {
             log.error("{} ❌ SMS 발송 실패 - billId={}, error={}", 
                 traceId, message.getBillId(), e.getMessage());
-            saveNotification(message, "FAILED", e.getMessage(), traceId);
         }
     }
     
