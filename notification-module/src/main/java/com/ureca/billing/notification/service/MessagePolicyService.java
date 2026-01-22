@@ -35,8 +35,7 @@ public class MessagePolicyService {
      */
     public boolean isBlockTime() {
         LocalTime now = LocalTime.now();
-        return false;
-        //return isBlockTime(now);
+        return isBlockTime(now);
     }
     
     /**
