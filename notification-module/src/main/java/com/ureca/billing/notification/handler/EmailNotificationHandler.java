@@ -24,99 +24,32 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailNotificationHandler implements NotificationHandler {
-    
-    private final MessagePolicyService policyService;
-    private final WaitingQueueService queueService;
-    private final EmailService emailService;
-    private final DuplicateCheckHandler duplicateCheckHandler;
-    private final NotificationRepository notificationRepository;
-    private final ObjectMapper objectMapper;
-    
-    @Override
-    @Transactional
-    public void handle(BillingMessageDto message, String traceId) {
-        log.info("{} 📧 EMAIL 핸들러 처리 시작 - billId={}", traceId, message.getBillId());
-        
-        // 1. 중복 체크 (타입 포함)
-        if (duplicateCheckHandler.isDuplicate(message.getBillId(), "EMAIL")) {
-            log.warn("{} ⚠️ 중복 메시지 스킵 - billId={}", traceId, message.getBillId());
-            saveNotification(message, "FAILED", "Duplicate message", traceId);
-            return;
-        }
-        
-        // 2. 금지 시간대 체크
-        boolean isBlockTime = policyService.isBlockTime();
-        
-        if (isBlockTime) {
-            log.info("{} ⏰ 금지 시간대 - 대기열 저장 - billId={}", traceId, message.getBillId());
-            try {
-                String messageJson = objectMapper.writeValueAsString(message);
-                queueService.addToQueue(messageJson);
-            } catch (Exception e) {
-                log.error("{} JSON 변환 실패", traceId, e);
-            }
-            saveNotification(message, "PENDING", "Added to waiting queue (block time)", traceId);
-            return;
-        }
-        
-        // 3. 이메일 발송
-        sendEmail(message, traceId);
-    }
-    
-    
-    @Override
-    public String getType() {
-        return "EMAIL";
-    }
-    
-    private void sendEmail(BillingMessageDto message, String traceId) {
-        try {
-            // 발송 시도
-            emailService.sendEmail(message);
-            
-            log.info("{} ✅ EMAIL 발송 성공 - billId={}", traceId, message.getBillId());
-            
-        } catch (Exception e) {
-            log.error("{} ❌ EMAIL 발송 실패 - billId={}, error={}", 
-                traceId, message.getBillId(), e.getMessage());
 
-            
-            // 예외 재발생 → Kafka 재시도 또는 DLT
+    private final EmailService emailService;
+
+    @Override
+    public void handle(BillingMessageDto message, String traceId) {
+        // [로그 주석 처리] 성능을 위해 INFO 로그는 끕니다.
+        // log.debug("{} 📧 EMAIL 핸들러 처리 시작 - billId={}", traceId, message.getBillId());
+
+        try {
+            // 순수 발송 로직만 수행
+            emailService.sendEmail(message);
+
+            // 성공 로그도 Consumer에서 찍거나, Debug로 내림
+            // log.debug("{} EMAIL 발송 성공", traceId);
+
+        } catch (Exception e) {
+            // 에러 로그는 남김 (어떤 에러인지 파악용)
+            log.error("{} EMAIL 발송 실패 - error={}", traceId, e.getMessage());
+
+            // 예외를 던져야 Consumer가 이를 잡아서 "FAILED" 상태로 DB에 저장할 수 있음
             throw new RuntimeException("Email send failed", e);
         }
     }
-    
-    private void saveNotification(BillingMessageDto message, String status, String errorMessage, String traceId) {
-        String content = createEmailContent(message);
-        
-        Notification notification = Notification.builder()
-            .userId(message.getUserId())
-            .notificationType("EMAIL")
-            .notificationStatus(status)
-            .recipient(message.getRecipientEmail())
-            .content(content)
-            .retryCount(0)
-            .scheduledAt(LocalDateTime.now())
-            .sentAt("SENT".equals(status) ? LocalDateTime.now() : null)
-            .errorMessage(errorMessage)
-            .createdAt(LocalDateTime.now())
-            .build();
-        
-        notificationRepository.save(notification);
-        log.debug("{} 💾 Notification 저장 완료 - status={}", traceId, status);
-    }
-    
-    private String createEmailContent(BillingMessageDto message) {
-        return String.format(
-            "[LG U+ 청구 알림]\n" +
-            "청구 년월: %s\n" +
-            "총 청구 금액: %,d원\n" +
-            "납부 기한: %s\n" +
-            "청구일: %s",
-            message.getBillYearMonth(),
-            message.getTotalAmount() != null ? message.getTotalAmount() : 0,
-            message.getDueDate() != null ? message.getDueDate() : "미정",
-            message.getBillDate() != null ? message.getBillDate() : "미정"
-        );
+
+    @Override
+    public String getType() {
+        return "EMAIL";
     }
 }
