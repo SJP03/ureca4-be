@@ -6,8 +6,9 @@ import java.sql.Types;
 
 import javax.sql.DataSource;
 
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -71,6 +72,7 @@ public class DummyDataJobConfig {
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
+                .listener(stepExecutionLogger())
                 .build();
     }
 
@@ -238,6 +240,7 @@ public class DummyDataJobConfig {
     		@Qualifier("userNotificationPrefsDummyStep") Step userNotificationPrefsDummyStep
     ) {
     	return new JobBuilder("userDummyDataJob", jobRepository)
+                .listener(jobExecutionLogger())
     			.start(usersDummyStep)
                 .next(userNotificationPrefsDummyStep)
     			.build();
@@ -255,9 +258,51 @@ public class DummyDataJobConfig {
     		@Qualifier("microPaymentsDummyStep") Step microPaymentsDummyStep
     		) {
         return new JobBuilder("monthlyDummyDataJob", jobRepository)
+                .listener(jobExecutionLogger())
                 .start(userPlansDummyStep)
                 .next(userAddonsDummyStep)
                 .next(microPaymentsDummyStep)
                 .build();
+    }
+
+
+    // logger 추가
+
+    private static final Logger log = LoggerFactory.getLogger(DummyDataJobConfig.class);
+
+    @Bean
+    public JobExecutionListener jobExecutionLogger() {
+        return new JobExecutionListener() {
+            @Override
+            public void beforeJob(JobExecution jobExecution) {
+                log.info("[LOG] START {}",
+                        jobExecution.getJobInstance().getJobName());
+            }
+
+            @Override
+            public void afterJob(JobExecution jobExecution) {
+                log.info("[LOG] END {}, status={}",
+                        jobExecution.getJobInstance().getJobName(),
+                        jobExecution.getStatus());
+            }
+        };
+    }
+
+    @Bean
+    public StepExecutionListener stepExecutionLogger() {
+        return new StepExecutionListener() {
+            @Override
+            public void beforeStep(StepExecution stepExecution) {
+                log.info("[LOG] START {}", stepExecution.getStepName());
+            }
+
+            @Override
+            public ExitStatus afterStep(StepExecution stepExecution) {
+                log.info("[LOG] END {} status={}",
+                        stepExecution.getStepName(),
+                        stepExecution.getStatus());
+                return stepExecution.getExitStatus();
+            }
+        };
     }
 }
