@@ -1,0 +1,38 @@
+# docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker up -d {(코드 업데이트 시 추가) --build admin notification}
+
+services:
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: admin-module
+    container_name: lgubill-admin
+    env_file:
+      - .env.docker
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+      - redis
+      - kafka
+
+  notification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: notification-module
+    container_name: lgubill-notification
+    env_file:
+      - .env.docker
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8082:8080"
+    depends_on:
+      - mysql
+      - redis
+      - kafka

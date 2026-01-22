@@ -1,15 +1,17 @@
 # 공통 데이터베이스 설정
 spring:
   config:
-    import: optional:file:../.env.local[.properties]
+    import:
+      - optional:file:./.env.local[.properties]
+      - optional:file:../.env.local[.properties]
   batch:
     job:
-      enabled: true
+      enabled: false
     jdbc:
       initialize-schema: always
   
   profiles:
-    active: local  # 기본값 로컬
+    active: ${SPRING_PROFILES_ACTIVE:local}  # 기본값 로컬
 
   # Flyway 설정
   flyway:
@@ -39,4 +41,4 @@ crypto:
   aes:
     key: ${AES_SECRET_KEY}
   hash:
-    key: ${HASH_SECRET_KEY:Q8v9K2MZP0D3wF4xR5cN7yA1bT+JH=}
+    key: ${HASH_SECRET_KEY}
