@@ -249,7 +249,7 @@ public class DummyDataJobConfig {
     //파라미터 필요 
     /*예)
      	--spring.batch.job.name=monthlyDummyDataJob
-		argetYearMonth=2025-08
+		targetYearMonth=2025-08
      */
     @Bean
     public Job monthlyDummyDataJob(

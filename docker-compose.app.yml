@@ -1,6 +1,29 @@
 # docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker up -d {(코드 업데이트 시 추가) --build admin notification}
 
 services:
+  core-job:
+    # 기존 Dockerfile을 재사용 (args로 모듈만 변경)
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: core-module
+    container_name: lgubill-core-job
+    # [중요] 'dummy' 프로필을 지정하여 평소엔 실행 안 되게 막음
+    profiles:
+      - dummy
+    env_file:
+      - .env.docker
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # 웹 애플리케이션 모드 끄기 (확실하게 하기 위해 환경변수로도 주입)
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # 컨테이너가 끝나도 재시작하지 않음
+    restart: "no"
+
   admin:
     build:
       context: .
@@ -15,9 +38,12 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - mysql
-      - redis
-      - kafka
+      mysql:
+        condition: service_healthy  # <--- 여기가 핵심 변경 사항입니다!
+      redis:
+        condition: service_healthy  # Redis도 기다려주면 더 안전합니다.
+      kafka:
+        condition: service_healthy  # Kafka도 마찬가지입니다.
 
   notification:
     build:
@@ -33,6 +59,9 @@ services:
     ports:
       - "8082:8080"
     depends_on:
-      - mysql
-      - redis
-      - kafka
+      mysql:
+        condition: service_healthy  # <--- 여기가 핵심 변경 사항입니다!
+      redis:
+        condition: service_healthy  # Redis도 기다려주면 더 안전합니다.
+      kafka:
+        condition: service_healthy  # Kafka도 마찬가지입니다.
