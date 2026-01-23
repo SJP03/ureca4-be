@@ -1,9 +1,16 @@
 package com.ureca.billing.notification.consumer;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-
-import com.ureca.billing.notification.service.ScheduledQueueService;
 import com.ureca.billing.core.dto.BillingMessageDto;
 import com.ureca.billing.notification.consumer.handler.DuplicateCheckHandler;
 import com.ureca.billing.notification.consumer.handler.DuplicateCheckHandler.CheckResult;
@@ -13,18 +20,11 @@ import com.ureca.billing.notification.handler.NotificationHandler;
 import com.ureca.billing.notification.handler.NotificationHandlerFactory;
 import com.ureca.billing.notification.service.EmailService;
 import com.ureca.billing.notification.service.MessagePolicyService;
+import com.ureca.billing.notification.service.ScheduledQueueService;
 import com.ureca.billing.notification.service.WaitingQueueService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Kafka 메시지 Consumer (멀티 채널 지원 + 예약 발송)
@@ -64,9 +64,9 @@ public class BillingEventConsumer {
 
     @KafkaListener(
         topics = "billing-event",
-        groupId = "notification-group",
+        groupId = "notification-group-v2",
         containerFactory = "kafkaListenerContainerFactory",
-        concurrency = "3"
+        concurrency = "50"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack,
     		@Header(value = KafkaHeaders.DELIVERY_ATTEMPT, required = false) Integer deliveryAttempt) {  // ✅ 재시도 횟수 헤더
