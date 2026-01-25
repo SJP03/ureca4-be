@@ -303,6 +303,7 @@ public class MonthlyBillingService {
                     outboxRows.add(new Object[]{
                             eventId, info.getBillId(), info.getUserId(),
                             eventType, ch, encryptedPayload
+
                     });
 
                 } catch (JsonProcessingException e) {
@@ -316,7 +317,11 @@ public class MonthlyBillingService {
             INSERT INTO OUTBOX_EVENTS
               (event_id, bill_id, user_id, event_type, notification_type, payload, status, attempt_count)
             VALUES
+<<<<<<< HEAD
               (?, ?, ?, ?, ?, ?, 'READY', 0)
+=======
+              (?, ?, ?, ?, ?, CAST(? AS JSON), 'READY', 0)
+>>>>>>> main
             ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
         """, outboxRows);
     }
