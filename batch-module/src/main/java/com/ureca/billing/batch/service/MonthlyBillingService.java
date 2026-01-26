@@ -33,7 +33,7 @@ public class MonthlyBillingService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
-
+    private final CryptoKeyProvider keyProvider;
 
     @Transactional
     public void createBills(List<Long> userIds, YearMonth billingMonth) {
