@@ -139,28 +139,6 @@ public class BillingEventConsumer {
             // - 재시도: 2 이상 (30% 실패율)
             int deliveryAttempt = isRetry ? 2 : 1;
             
-            LocalTime now = LocalTime.now();
-            QuietTimeResult quietResult = userPrefCache.checkQuietTime(
-                message.getUserId(), 
-                channel, 
-                now
-            );
-
-            if (quietResult.isQuiet) {
-                log.info("{} 🔕 금지시간: userId={}, reason={}, source={}", 
-                    traceInfo, message.getUserId(), quietResult.reason, quietResult.source);
-                // 처리 중 마킹 (중복 방지)
-                duplicateCheckHandler.markAsProcessing(message.getBillId(), channel);
-                // 대기열에는 복호화된 JSON 저장 (재발송 시 다시 암호화할 필요 없음)
-                waitingQueueService.addToQueue(decryptedPayload);
-
-                // PENDING 상태의 Notification 객체 생성/반환
-                return createOrUpdateNotificationEntity(
-                        message, channel, "PENDING",
-                        quietResult.getMessage(),
-                        isRetry, existingNotificationId
-                );
-            }
             
             YearMonth billingMonth = parseBillingMonth(message.getBillYearMonth());
             Optional<LocalDateTime> scheduledTimeOpt = userPrefCache.getScheduledTime(
@@ -192,6 +170,30 @@ public class BillingEventConsumer {
                     log.debug("{} ⏰ 예약시간 지남 → 즉시발송: scheduledAt={}", traceInfo, scheduledAt);
                 }
             }
+            
+            LocalTime now = LocalTime.now();
+            QuietTimeResult quietResult = userPrefCache.checkQuietTime(
+                message.getUserId(), 
+                channel, 
+                now
+            );
+
+            if (quietResult.isQuiet) {
+                log.info("{} 🔕 금지시간: userId={}, reason={}, source={}", 
+                    traceInfo, message.getUserId(), quietResult.reason, quietResult.source);
+                // 처리 중 마킹 (중복 방지)
+                duplicateCheckHandler.markAsProcessing(message.getBillId(), channel);
+                // 대기열에는 복호화된 JSON 저장 (재발송 시 다시 암호화할 필요 없음)
+                waitingQueueService.addToQueue(decryptedPayload);
+
+                // PENDING 상태의 Notification 객체 생성/반환
+                return createOrUpdateNotificationEntity(
+                        message, channel, "PENDING",
+                        quietResult.getMessage(),
+                        isRetry, existingNotificationId
+                );
+            }
+            
             
             try {
                 NotificationHandler handler = handlerFactory.getHandler(channel);
