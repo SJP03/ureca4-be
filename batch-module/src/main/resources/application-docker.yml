@@ -1,0 +1,7 @@
+spring:
+  config:
+    import:
+      - optional:file:./.env.docker[.properties]
+      - optional:file:../.env.docker[.properties]
+     
+     

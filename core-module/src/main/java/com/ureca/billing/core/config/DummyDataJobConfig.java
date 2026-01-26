@@ -6,8 +6,9 @@ import java.sql.Types;
 
 import javax.sql.DataSource;
 
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -40,26 +41,26 @@ public class DummyDataJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
-    
+
     //Users 더미데이터 개수
     @Bean
     @StepScope
     public ItemReader<Long> usersReader() {
-        return new SequenceItemReader(1000000);
+        return new SequenceItemReader(10000);
     }
     //userAddons 더미데이터 개수
     @Bean
     @StepScope
     public ItemReader<Long> userAddonsReader() {
-        return new SequenceItemReader(2000000);
+        return new SequenceItemReader(20000);
     }
     //microPayments 더미데이터 개수
     @Bean
     @StepScope
     public ItemReader<Long> microPaymentsUserReader() {
-        return new SequenceItemReader(2000000);
+        return new SequenceItemReader(20000);
     }
-    
+
     //범용 Step 생성 메서드
     private <I, O> Step createStep(String stepName,
                                    ItemReader<I> reader,
@@ -71,6 +72,7 @@ public class DummyDataJobConfig {
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
+                .listener(stepExecutionLogger())
                 .build();
     }
 
@@ -176,7 +178,7 @@ public class DummyDataJobConfig {
             ps.setTimestamp(5, Timestamp.valueOf(payment.getPaymentDate()));
         });
         writer.afterPropertiesSet();
-    	
+
         return new StepBuilder("microPaymentsDummyStep", jobRepository)
                 .<Long, MicroPayments>chunk(1000, transactionManager)
                 .reader(reader)
@@ -238,15 +240,16 @@ public class DummyDataJobConfig {
     		@Qualifier("userNotificationPrefsDummyStep") Step userNotificationPrefsDummyStep
     ) {
     	return new JobBuilder("userDummyDataJob", jobRepository)
+                .listener(jobExecutionLogger())
     			.start(usersDummyStep)
                 .next(userNotificationPrefsDummyStep)
     			.build();
     }
     //결제 데이터 관련 더미데이터 생성 job
-    //파라미터 필요 
+    //파라미터 필요
     /*예)
      	--spring.batch.job.name=monthlyDummyDataJob
-		argetYearMonth=2025-08
+		targetYearMonth=2025-08
      */
     @Bean
     public Job monthlyDummyDataJob(
@@ -255,9 +258,51 @@ public class DummyDataJobConfig {
     		@Qualifier("microPaymentsDummyStep") Step microPaymentsDummyStep
     		) {
         return new JobBuilder("monthlyDummyDataJob", jobRepository)
+                .listener(jobExecutionLogger())
                 .start(userPlansDummyStep)
                 .next(userAddonsDummyStep)
                 .next(microPaymentsDummyStep)
                 .build();
+    }
+
+
+    // logger 추가
+
+    private static final Logger log = LoggerFactory.getLogger(DummyDataJobConfig.class);
+
+    @Bean
+    public JobExecutionListener jobExecutionLogger() {
+        return new JobExecutionListener() {
+            @Override
+            public void beforeJob(JobExecution jobExecution) {
+                log.info("[LOG] START {}",
+                        jobExecution.getJobInstance().getJobName());
+            }
+
+            @Override
+            public void afterJob(JobExecution jobExecution) {
+                log.info("[LOG] END {}, status={}",
+                        jobExecution.getJobInstance().getJobName(),
+                        jobExecution.getStatus());
+            }
+        };
+    }
+
+    @Bean
+    public StepExecutionListener stepExecutionLogger() {
+        return new StepExecutionListener() {
+            @Override
+            public void beforeStep(StepExecution stepExecution) {
+                log.info("[LOG] START {}", stepExecution.getStepName());
+            }
+
+            @Override
+            public ExitStatus afterStep(StepExecution stepExecution) {
+                log.info("[LOG] END {} status={}",
+                        stepExecution.getStepName(),
+                        stepExecution.getStatus());
+                return stepExecution.getExitStatus();
+            }
+        };
     }
 }

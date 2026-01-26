@@ -1,7 +1,7 @@
 # 공통 데이터베이스 설정
 spring:
-  config:
-    import: optional:file:../.env.local[.properties]
+  main:
+    web-application-type: none  # 톰캣(웹서버)을 띄우지 않고, 작업 후 바로 종료됨
   batch:
     job:
       enabled: true
@@ -9,7 +9,7 @@ spring:
       initialize-schema: always
   
   profiles:
-    active: local  # 기본값 로컬
+    active: docker
 
   # Flyway 설정
   flyway:
@@ -39,4 +39,4 @@ crypto:
   aes:
     key: ${AES_SECRET_KEY}
   hash:
-    key: ${HASH_SECRET_KEY:Q8v9K2MZP0D3wF4xR5cN7yA1bT+JH=}
+    key: ${HASH_SECRET_KEY}

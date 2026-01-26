@@ -1,8 +1,8 @@
 spring:
   config:
     import:
-      - optional:file:./.env.local[.properties]
-      - optional:file:../.env.local[.properties]
+      - optional:file:./.env.docker[.properties]
+      - optional:file:../.env.docker[.properties]
 
   datasource:
     url: ${DB_URL}
