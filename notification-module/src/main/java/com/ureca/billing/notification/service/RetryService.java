@@ -125,7 +125,7 @@ public class RetryService {
             redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 for (Notification n : updatesToSave) {
                     // 키 포맷: retry:msg:{billId}
-                    String key = "retry:msg:" + n.getBillId();
+                	String key = "retry:msg:" + n.getBillId() + ":" + n.getNotificationType();
                     // value: notificationId, TTL: 1시간 (3600초)
                     connection.setEx(key.getBytes(), 3600, String.valueOf(n.getNotificationId()).getBytes());
                 }
