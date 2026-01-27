@@ -62,25 +62,14 @@ docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm --
 * **필수 파라미터:** `billingMonth=yyyy-MM`
 * **재실행 팁:** 이미 완료된 작업(Completed)은 다시 실행되지 않으므로, 테스트 시에는 `version` 파라미터를 변경하며 실행하세요.
 
-**[Mac/Linux]**
-```bash
-docker compose -f docker-compose.infra.yml -f docker-compose.app.yml \
-  run --rm batch \
-  java -jar /app/app.jar \
-  --spring.batch.job.name=monthlyBillingJob \
-  billingMonth=2025-08 \
-  version=$(date +%s)
+**배치 서버 실행**
+```powershell
+ docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker --profile job up -d --build batch
 ```
 
-**[Windows PowerShell]**
-```powershell
-docker compose -f docker-compose.infra.yml -f docker-compose.app.yml `
-  run --rm batch `
-  java -jar /app/app.jar `
-  --spring.batch.job.name=monthlyBillingJob `
-  billingMonth=2025-08 `
-  version=1 
-# 재실행 시 version=2, 3... 숫자를 바꿔주세요
+**명령어 실행**
+```bash
+  curl -X POST "http://localhost:8083/api/batch/monthly-billing?billingMonth=2025-08"
 ```
 
 ---
