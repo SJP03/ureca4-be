@@ -67,7 +67,8 @@ docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm --
  docker compose -f docker-compose.infra.yml -f docker-compose.app.yml --env-file .env.docker --profile job up -d --build batch
 ```
 
-**명령어 실행**
+**API 호출**
+* **필수 파라미터:** `?billingMonth=yyyy-MM`
 ```bash
   curl -X POST "http://localhost:8083/api/batch/monthly-billing?billingMonth=2025-08"
 ```
