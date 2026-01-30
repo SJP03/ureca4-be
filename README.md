@@ -41,7 +41,7 @@
 
 ## 🏗️ 시스템 아키텍처
 
-<img width="1007" alt="image" src="https://github.com/user-attachments/assets/5704cf1c-cfeb-479b-a845-56640ad5f47a" />
+<img width="1007" alt="image" src="[https://github.com/user-attachments/assets/5704cf1c-cfeb-479b-a845-56640ad5f47a](https://github.com/SJP03/ureca4-be/blob/main/images/BillForU%2B%20(%EB%B9%8C%ED%8F%AC%EC%9C%A0)%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98-%EC%9D%B8%ED%94%84%EB%9D%BC%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.svg)" />
 
 ---
 
